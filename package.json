@@ -4,6 +4,10 @@
   "description": "Node.js on Docker",
   "author": "Volodymyr Melko <v.melko28@gmail.com>",
   "license": "WTFPL",
+  "repository": {
+    "type" : "git",
+    "url" : "https://github.com/oxidmod/node_test.git"
+  },
   "main": "test.js",
   "dependencies": {
   }
