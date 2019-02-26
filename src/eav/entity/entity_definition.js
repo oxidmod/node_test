@@ -2,6 +2,39 @@
 
 const AttributeDefinitionMap = require('./attribute_definition_map.js');
 
+const createAttribute = (entity, definition, isMultiple) => {
+    let field = `_${definition.name}`,
+        property = {
+            get:function () {
+                return entity[field];
+            },
+            set: function (newValue) {
+                definition.check(newValue);
+
+                entity[field] = newValue;
+            },
+        };
+
+    if (isMultiple) {
+        property.set = function (newValues) {
+            if (newValues === null || typeof newValues[Symbol.iterator] !== 'function' ) {
+                throw new Error(`Only iterable values are allowed for attribute "${definition.name}"`)
+            }
+
+            entity[field] = entity[field] instanceof Set ?
+                (entity[field].clear(), entity[field]) :
+                new Set();
+
+            newValues.forEach((newValue) => {
+                definition.check(newValue);
+                entity[field].add(newValue);
+            });
+        }
+    }
+
+    Object.defineProperty(entity, definition.name, property);
+};
+
 module.exports = class EntityDefinition {
     constructor(name, attributeDefinitionMap) {
         this.name = name;
@@ -14,39 +47,8 @@ module.exports = class EntityDefinition {
     }
 
     registerAttributes(entity, registry) {
-        let field, property, attributeDefinition;
         for(let [attributeName, isMultiple] of this.attributeDefinitionMap) {
-            attributeDefinition = registry.get(attributeName);
-            field = `_${attributeName}`;
-            property = {
-                get:function () {
-                    return this[field];
-                },
-                set: function (newValue) {
-                    attributeDefinition.check(newValue);
-
-                    this[field] = newValue;
-                },
-            };
-
-            if (isMultiple) {
-                property.set = function (newValues) {
-                    if (newValues === null || typeof newValues[Symbol.iterator] !== 'function' ) {
-                        throw new Error(`Only iterable values are allowed for attribute "${attributeDefinition.name}"`)
-                    }
-
-                    this[field] = this[field] instanceof Set ?
-                        (this[field].clear(), this[field]) :
-                        new Set();
-
-                    newValues.forEach((newValue) => {
-                        attributeDefinition.check(newValue);
-                        this[field].add(newValue);
-                    });
-                }
-            }
-
-            Object.defineProperty(entity, attributeDefinition.name, property);
+            createAttribute(this, registry.get(attributeName), isMultiple);
         }
     }
 
@@ -56,7 +58,13 @@ module.exports = class EntityDefinition {
         }
 
         for(let [attributeName, isMultiple] of this.attributeDefinitionMap) {
-            registry.get(attributeName).check(entity[attributeName]);
+            if (isMultiple) {
+                entity[attributeName].forEach((val) => {
+                    registry.get(attributeName).check(val)
+                })
+            } else {
+                registry.get(attributeName).check(entity[attributeName]);
+            }
         }
     }
 };

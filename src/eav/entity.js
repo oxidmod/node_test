@@ -10,7 +10,6 @@ module.exports = class Entity {
         let entityDefinition = entityDefinitionRegistry.get(type);
 
         entityDefinition.registerAttributes(this, attributeDefinitionRegistry);
-
         for (let attributeName in data) {
             if (data.hasOwnProperty(attributeName)) {
                 this[attributeName] = data[attributeName];
