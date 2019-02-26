@@ -17,15 +17,15 @@ const createAttribute = (entity, definition, isMultiple) => {
 
     if (isMultiple) {
         property.set = function (newValues) {
-            if (newValues === null || typeof newValues[Symbol.iterator] !== 'function' ) {
-                throw new Error(`Only iterable values are allowed for attribute "${definition.name}"`)
+            if (!Array.isArray(newValues)) {
+                throw new Error(`Only arrays are allowed for attribute "${definition.name}"`)
             }
 
             entity[field] = entity[field] instanceof Set ?
                 (entity[field].clear(), entity[field]) :
                 new Set();
 
-            newValues.forEach((newValue) => {
+            newValues.map((newValue) => {
                 definition.check(newValue);
                 entity[field].add(newValue);
             });
@@ -48,7 +48,7 @@ module.exports = class EntityDefinition {
 
     registerAttributes(entity, registry) {
         for(let [attributeName, isMultiple] of this.attributeDefinitionMap) {
-            createAttribute(this, registry.get(attributeName), isMultiple);
+            createAttribute(entity, registry.get(attributeName), isMultiple);
         }
     }
 
